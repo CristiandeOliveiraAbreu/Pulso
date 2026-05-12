@@ -1,0 +1,903 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { useBlog, Question, Response, ArticleItem } from '../context/BlogContext';
+import { 
+  Save, 
+  Settings, 
+  Layout, 
+  Share2, 
+  FileText, 
+  Image as ImageIcon,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  BarChart as BarChartIcon,
+  Copy,
+  Download,
+  List,
+  Eye,
+  CheckCircle,
+  Clock,
+  ChevronRight,
+  Globe,
+  Search,
+  PenTool,
+  Award
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { formatDriveUrl } from '../utils/formatters';
+
+export default function Admin() {
+  const { data, updateData, resetData } = useBlog();
+  const [localData, setLocalData] = useState(data);
+  const [activeTab, setActiveTab] = useState('branding');
+  const [selectedResearchId, setSelectedResearchId] = useState(data.researches[0]?.id);
+  const [isSaved, setIsSaved] = useState(false);
+  const [viewMode, setViewMode] = useState<'edit' | 'results'>('edit');
+  
+  // Editorial State
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [editorMode, setEditorMode] = useState<'editor' | 'preview'>('editor');
+  const [activeEditorialTab, setActiveEditorialTab] = useState<'Escritório' | 'Rascunhos' | 'Publicados'>('Escritório');
+
+  useEffect(() => {
+    setLocalData(data);
+  }, [data]);
+
+  const handleSave = () => {
+    updateData(localData);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  const updateSection = (section: string, field: string, value: any) => {
+    setLocalData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section as keyof typeof prev] as any,
+        [field]: value
+      }
+    }));
+  };
+
+  // Article Management
+  const addArticle = () => {
+    const newId = Math.random().toString(36).substr(2, 9);
+    const newArticle: ArticleItem = {
+      id: newId,
+      title: 'Título do Novo Artigo',
+      type: 'article',
+      category: 'Geral',
+      status: 'draft',
+      author: 'Redação PULSO',
+      date: new Date().toLocaleDateString('pt-BR'),
+      lastEdited: 'Agora',
+      imageUrl: '',
+      excerpt: '',
+      content: '',
+      metaTitle: '',
+      metaDescription: '',
+      stats: { views: 0, likes: 0, comments: 0 }
+    };
+    setLocalData(prev => ({
+      ...prev,
+      articles: [newArticle, ...prev.articles]
+    }));
+    setEditingArticleId(newId);
+  };
+
+  const updateArticle = (id: string, field: keyof ArticleItem, value: any) => {
+    setLocalData(prev => ({
+      ...prev,
+      articles: prev.articles.map(a => a.id === id ? { ...a, [field]: value } : a)
+    }));
+  };
+
+  const removeArticle = (id: string) => {
+    if (confirm('Excluir este artigo permanentemente?')) {
+      setLocalData(prev => ({
+        ...prev,
+        articles: prev.articles.filter(a => a.id !== id)
+      }));
+      if (editingArticleId === id) setEditingArticleId(null);
+    }
+  };
+
+  const currentArticle = localData.articles.find(a => a.id === editingArticleId);
+
+  // Research Management
+  const addResearch = () => {
+    const newId = Math.random().toString(36).substr(2, 9);
+    const newItem = {
+      id: newId,
+      number: localData.researches.length + 1,
+      year: new Date().getFullYear(),
+      title: 'Nova Pesquisa',
+      date: 'MAIO 2026',
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400',
+      description: '',
+      executiveSummary: '',
+      mainInsight: '',
+      content: '',
+      questions: []
+    };
+    setLocalData(prev => ({
+      ...prev,
+      researches: [...prev.researches, newItem]
+    }));
+    setSelectedResearchId(newId);
+  };
+
+  const updateResearchField = (id: string, field: string, value: any) => {
+    setLocalData(prev => ({
+      ...prev,
+      researches: prev.researches.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeResearch = (id: string) => {
+    if (confirm('Excluir esta pesquisa?')) {
+      setLocalData(prev => ({
+        ...prev,
+        researches: prev.researches.filter(item => item.id !== id)
+      }));
+      if (selectedResearchId === id) setSelectedResearchId(localData.researches[0]?.id);
+    }
+  };
+
+  const addQuestion = (researchId: string) => {
+    const newQuestion: Question = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: 'multiple',
+      label: 'Nova Pergunta',
+      options: ['Opção 1', 'Opção 2']
+    };
+    setLocalData(prev => ({
+      ...prev,
+      researches: prev.researches.map(r => 
+        r.id === researchId ? { ...r, questions: [...r.questions, newQuestion] } : r
+      )
+    }));
+  };
+
+  const updateQuestion = (researchId: string, qId: string, field: string, value: any) => {
+    setLocalData(prev => ({
+      ...prev,
+      researches: prev.researches.map(r => 
+        r.id === researchId ? {
+          ...r,
+          questions: r.questions.map(q => q.id === qId ? { ...q, [field]: value } : q)
+        } : r
+      )
+    }));
+  };
+
+  const removeQuestion = (researchId: string, qId: string) => {
+    setLocalData(prev => ({
+      ...prev,
+      researches: prev.researches.map(r => 
+        r.id === researchId ? { ...r, questions: r.questions.filter(q => q.id !== qId) } : r
+      )
+    }));
+  };
+
+  const getStats = (researchId: string, questionId: string) => {
+    const researchResponses = data.responses.filter(r => r.researchId === researchId);
+    const question = localData.researches.find(r => r.id === researchId)?.questions.find(q => q.id === questionId);
+    
+    if (!question) return [];
+
+    if (question.type === 'multiple' && question.options) {
+      return question.options.map(opt => ({
+        name: opt,
+        value: researchResponses.filter(r => r.answers[questionId] === opt).length
+      }));
+    }
+
+    if (question.type === 'rating') {
+      return [1, 2, 3, 4, 5].map(val => ({
+        name: `${val} Estrela${val > 1 ? 's' : ''}`,
+        value: researchResponses.filter(r => Number(r.answers[questionId]) === val).length
+      }));
+    }
+
+    return [];
+  };
+
+  const currentResearch = localData.researches.find(r => r.id === selectedResearchId);
+  const statsAvailable = data.responses.filter(r => r.researchId === selectedResearchId).length;
+  const COLORS = ['#000000', '#334155', '#64748b', '#94a3b8', '#cbd5e1'];
+
+  // -------------------------------------------------------------------------
+  // FULL EDITORIAL EDITOR VIEW
+  // -------------------------------------------------------------------------
+  if (editingArticleId && currentArticle) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        {/* Editor Top Bar */}
+        <header className="h-20 border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 bg-white z-50">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => { handleSave(); setEditingArticleId(null); }} 
+              className="p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-900 transition-all"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setEditorMode('editor')}
+                className={`px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${editorMode === 'editor' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Editor
+              </button>
+              <button 
+                onClick={() => setEditorMode('preview')}
+                className={`px-6 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${editorMode === 'preview' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Preview
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Salvamento Automático</span>
+            <button 
+              onClick={handleSave}
+              className={`px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isSaved ? 'bg-green-500 text-white' : 'bg-slate-900 text-white hover:bg-black'}`}
+            >
+              {isSaved ? 'Artigo Salvo' : 'Publicar'}
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main Writing Area */}
+          <main className="flex-1 overflow-y-auto p-20 custom-scrollbar">
+            {editorMode === 'editor' ? (
+              <div className="max-w-3xl mx-auto space-y-12">
+                <div className="relative group aspect-video rounded-[2.5rem] overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200">
+                  {currentArticle.imageUrl ? (
+                    <img src={formatDriveUrl(currentArticle.imageUrl)} className="w-full h-full object-cover" alt="Cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                      <ImageIcon size={48} className="mb-4" />
+                      <p className="font-black text-[10px] uppercase tracking-widest">Clique para adicionar imagem de capa</p>
+                    </div>
+                  )}
+                  <input 
+                    type="text" 
+                    placeholder="Cole a URL da imagem aqui..."
+                    value={currentArticle.imageUrl}
+                    onChange={(e) => updateArticle(currentArticle.id, 'imageUrl', e.target.value)}
+                    className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-xs outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
+
+                <textarea 
+                  value={currentArticle.title}
+                  onChange={(e) => updateArticle(currentArticle.id, 'title', e.target.value)}
+                  placeholder="Título do Artigo..."
+                  className="w-full text-5xl font-black tracking-tighter text-slate-900 outline-none resize-none placeholder:text-slate-200"
+                  rows={2}
+                />
+
+                <textarea 
+                  value={currentArticle.content}
+                  onChange={(e) => updateArticle(currentArticle.id, 'content', e.target.value)}
+                  placeholder="Comece a escrever o seu editorial aqui..."
+                  className="w-full text-lg font-serif text-slate-700 outline-none min-h-[500px] leading-relaxed placeholder:text-slate-200"
+                />
+              </div>
+            ) : (
+              <div className="max-w-3xl mx-auto space-y-12 pb-20">
+                 <img src={formatDriveUrl(currentArticle.imageUrl)} className="w-full aspect-video object-cover rounded-[2.5rem] shadow-soft-2xl" alt="" />
+                 <h1 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight">{currentArticle.title}</h1>
+                 <div className="flex gap-4 items-center border-y border-slate-100 py-6">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-serif italic font-bold">RE</div>
+                    <div>
+                      <div className="text-xs font-black text-slate-900 uppercase tracking-widest">{currentArticle.author}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{currentArticle.date} • 5 min de leitura</div>
+                    </div>
+                 </div>
+                 <div className="prose prose-slate prose-xl max-w-none font-serif text-slate-700 leading-relaxed whitespace-pre-wrap">
+                   {currentArticle.content || 'Sem conteúdo para pré-visualizar.'}
+                 </div>
+              </div>
+            )}
+          </main>
+
+          {/* Right Settings Sidebar */}
+          <aside className="w-80 border-l border-slate-100 p-8 overflow-y-auto custom-scrollbar space-y-10">
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Configurações</h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Status do Post</label>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                    <button 
+                      onClick={() => updateArticle(currentArticle.id, 'status', 'draft')}
+                      className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${currentArticle.status === 'draft' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Rascunho
+                    </button>
+                    <button 
+                      onClick={() => updateArticle(currentArticle.id, 'status', 'published')}
+                      className={`py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${currentArticle.status === 'published' ? 'bg-green-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Publicado
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Classificação</label>
+                  <select 
+                    value={currentArticle.type}
+                    onChange={(e) => updateArticle(currentArticle.id, 'type', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-black outline-none focus:border-slate-900"
+                  >
+                    <option value="article">Artigo Comum</option>
+                    <option value="opinion">Opinião / Editorial</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Categoria</label>
+                  <input 
+                    type="text" 
+                    value={currentArticle.category}
+                    onChange={(e) => updateArticle(currentArticle.id, 'category', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-black outline-none focus:border-slate-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-10 border-t border-slate-100">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6 flex items-center gap-2">
+                <Globe size={14} /> Metadados SEO
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Meta Title</label>
+                  <input 
+                    type="text" 
+                    value={currentArticle.metaTitle}
+                    onChange={(e) => updateArticle(currentArticle.id, 'metaTitle', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium outline-none focus:border-slate-900"
+                    placeholder="Título para o Google..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 block">Meta Description</label>
+                  <textarea 
+                    value={currentArticle.metaDescription}
+                    onChange={(e) => updateArticle(currentArticle.id, 'metaDescription', e.target.value)}
+                    rows={4}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium outline-none focus:border-slate-900 leading-relaxed"
+                    placeholder="Descrição para os resultados de busca..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-10 border-t border-slate-100">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Visuais</h3>
+              <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner">
+                {currentArticle.imageUrl ? (
+                  <img src={formatDriveUrl(currentArticle.imageUrl)} className="w-full h-full object-cover" alt="Preview" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <ImageIcon size={24} />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => removeArticle(currentArticle.id)}
+              className="w-full py-4 rounded-2xl bg-red-50 text-red-500 font-black text-[9px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all mt-10"
+            >
+              Excluir Artigo
+            </button>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // MAIN DASHBOARD VIEW
+  // -------------------------------------------------------------------------
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-full z-30">
+        <div className="p-8 border-b border-white/10">
+          <h1 className="text-2xl font-black tracking-tighter italic">PULSO <span className="text-white/40 not-italic">ADMIN</span></h1>
+        </div>
+        
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+          {[
+            { id: 'branding', label: 'Identidade', icon: Settings },
+            { id: 'hero', label: 'Hero / Destaque', icon: Layout },
+            { id: 'opinion', label: 'Editorial Office', icon: PenTool },
+            { id: 'research', label: 'Pesquisas', icon: BarChartIcon },
+            { id: 'social', label: 'Configurações', icon: Globe },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-all font-black text-xs uppercase tracking-widest ${
+                activeTab === tab.id ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:bg-white/5'
+              }`}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-white/10 space-y-2">
+          <Link to="/" className="flex items-center gap-3 px-4 py-4 text-slate-400 hover:text-white font-black text-xs uppercase tracking-widest transition-colors">
+            <ArrowLeft size={18} />
+            Ver Site
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 ml-64 flex flex-col">
+        <header className="bg-white/90 backdrop-blur-md border-b border-slate-100 px-10 py-6 flex justify-between items-center sticky top-0 z-20">
+          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+            {activeTab === 'branding' && 'Identidade Visual'}
+            {activeTab === 'hero' && 'Destaque Principal'}
+            {activeTab === 'opinion' && 'Escritório Editorial'}
+            {activeTab === 'research' && 'Sistema de Pesquisas'}
+            {activeTab === 'social' && 'Redes e Rodapé'}
+          </h2>
+
+          <div className="flex gap-4">
+            <button 
+              onClick={handleSave}
+              className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-2xl ${
+                isSaved ? 'bg-green-500 text-white shadow-green-200' : 'bg-slate-900 hover:bg-black text-white shadow-slate-200'
+              }`}
+            >
+              {isSaved ? 'DADOS SALVOS' : <><Save size={18} /> Salvar Alterações</>}
+            </button>
+          </div>
+        </header>
+
+        <div className="p-10 max-w-6xl mx-auto w-full">
+          
+          {/* Escritório Editorial (Opinião) */}
+          {activeTab === 'opinion' && (
+            <div className="space-y-12">
+              {/* Dashboard Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Alcance Total</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.reduce((acc, a) => acc + a.stats.views, 0).toLocaleString()}</div>
+                  <div className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><CheckCircle size={12} /> Tráfego Geral</div>
+                </div>
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Rascunhos</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.filter(a => a.status === 'draft').length}</div>
+                  <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> Não publicados</div>
+                </div>
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Publicados</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.filter(a => a.status === 'published').length}</div>
+                  <div className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><Globe size={12} /> Ao vivo no ar</div>
+                </div>
+              </div>
+
+              {/* Editorial Content Management */}
+              <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-soft-2xl overflow-hidden">
+                <div className="flex border-b border-slate-100 px-8">
+                  {['Escritório', 'Rascunhos', 'Publicados'].map((tab) => (
+                    <button 
+                      key={tab}
+                      onClick={() => setActiveEditorialTab(tab as any)}
+                      className={`px-8 py-8 text-[10px] font-black uppercase tracking-[0.3em] border-b-4 transition-all ${
+                        activeEditorialTab === tab ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-500'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-12 space-y-10">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Fluxo Editorial</h3>
+                    <button 
+                      onClick={addArticle}
+                      className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-3xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200"
+                    >
+                      <Plus size={18} /> Novo Artigo
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {localData.articles
+                      .filter(a => {
+                        if (activeEditorialTab === 'Rascunhos') return a.status === 'draft';
+                        if (activeEditorialTab === 'Publicados') return a.status === 'published';
+                        return true;
+                      })
+                      .map((article) => (
+                      <div 
+                        key={article.id}
+                        onClick={() => setEditingArticleId(article.id)}
+                        className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex justify-between items-center group hover:bg-white hover:shadow-soft-2xl transition-all cursor-pointer border-l-8 border-l-transparent hover:border-l-slate-900"
+                      >
+                        <div className="flex items-center gap-8">
+                          <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm flex-shrink-0">
+                            {article.imageUrl ? (
+                              <img src={formatDriveUrl(article.imageUrl)} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-200"><FileText size={24} /></div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                               <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-100">{article.type === 'opinion' ? 'Editorial' : 'Artigo'}</span>
+                               <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">/ {article.category}</span>
+                            </div>
+                            <h4 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors">{article.title}</h4>
+                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-2 flex items-center gap-2">
+                               <Clock size={10} /> {article.lastEdited} • {article.author}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right hidden md:block">
+                             <div className="text-lg font-black text-slate-900">{article.stats.views.toLocaleString()}</div>
+                             <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Views</div>
+                          </div>
+                          <div className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${article.status === 'published' ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
+                            {article.status === 'published' ? 'Ao vivo' : 'Rascunho'}
+                          </div>
+                          <ChevronRight size={20} className="text-slate-200 group-hover:text-slate-900 transition-all transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {localData.articles.length === 0 && (
+                      <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                         <PenTool size={48} className="mx-auto text-slate-200 mb-4" />
+                         <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Nenhum artigo encontrado nesta pasta.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sistema de Pesquisas */}
+          {activeTab === 'research' && (
+            <div className="space-y-12">
+              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-soft-xl">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Gestão de Pesquisas</h3>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={addResearch}
+                      className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200"
+                    >
+                      <Plus size={18} /> Nova Edição
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {localData.researches
+                    .sort((a, b) => b.year !== a.year ? b.year - a.year : b.number - a.number)
+                    .map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedResearchId(r.id)}
+                      className={`w-full group p-6 rounded-[2rem] border-2 transition-all text-left flex items-center justify-between ${
+                        selectedResearchId === r.id 
+                        ? 'border-slate-900 bg-white shadow-xl translate-x-2' 
+                        : 'border-slate-50 bg-slate-50/50 hover:border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-8">
+                        <div className={`text-3xl font-black ${selectedResearchId === r.id ? 'text-slate-900' : 'text-slate-200'} transition-colors`}>
+                          #{String(r.number).padStart(2, '0')}
+                        </div>
+                        <div>
+                          <h4 className={`text-lg font-black leading-tight ${selectedResearchId === r.id ? 'text-slate-900' : 'text-slate-500'}`}>{r.title}</h4>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{r.date} • {r.year}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right hidden sm:block">
+                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</div>
+                           <div className="text-xs font-black text-slate-900">Coleta Ativa</div>
+                        </div>
+                        <ChevronRight size={20} className={`${selectedResearchId === r.id ? 'text-slate-900' : 'text-slate-200'} group-hover:translate-x-1 transition-all`} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {currentResearch && (
+                <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-soft-2xl overflow-hidden">
+                  <div className="flex justify-between items-center p-10 border-b border-slate-100">
+                     <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+                        <button onClick={() => setViewMode('edit')} className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'edit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Construtor</button>
+                        <button onClick={() => setViewMode('results')} className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'results' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Estatísticas</button>
+                     </div>
+                     <div className="flex gap-4">
+                        <button onClick={() => window.open(`/resultado/${currentResearch.id}?print=true`, '_blank')} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black shadow-xl shadow-slate-200 transition-all"><Download size={16} /> Relatório PDF</button>
+                     </div>
+                  </div>
+
+                  <div className="p-12">
+                     {viewMode === 'edit' ? (
+                       <div className="grid grid-cols-12 gap-12">
+                          <div className="col-span-8 space-y-10">
+                             <div className="space-y-6">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Título Oficial</label>
+                                <input type="text" value={currentResearch.title} onChange={(e) => updateResearchField(currentResearch.id, 'title', e.target.value)} className="w-full text-4xl font-black tracking-tight outline-none border-b border-slate-100 pb-4 focus:border-slate-900 transition-all" />
+                             </div>
+                             <div className="space-y-6">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Descrição e Objetivo</label>
+                                <textarea rows={4} value={currentResearch.description} onChange={(e) => updateResearchField(currentResearch.id, 'description', e.target.value)} className="w-full text-lg font-medium text-slate-500 outline-none leading-relaxed" />
+                             </div>
+                             
+                             <div className="pt-10 border-t border-slate-100 space-y-8">
+                                <div className="flex justify-between items-center">
+                                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Perguntas da Pesquisa</h3>
+                                   <button onClick={() => addQuestion(currentResearch.id)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 flex items-center gap-2"><Plus size={14} /> Adicionar</button>
+                                </div>
+                                <div className="space-y-6">
+                                   {currentResearch.questions.map((q, i) => (
+                                      <div key={q.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 group relative">
+                                         <button onClick={() => removeQuestion(currentResearch.id, q.id)} className="absolute top-8 right-8 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={18} /></button>
+                                         <div className="flex gap-6">
+                                            <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center font-black text-xs text-slate-900">{i+1}</div>
+                                            <div className="flex-1 space-y-6">
+                                               <input type="text" value={q.label} onChange={(e) => updateQuestion(currentResearch.id, q.id, 'label', e.target.value)} className="w-full bg-transparent font-black text-xl outline-none" />
+                                               <div className="flex gap-4">
+                                                  <select value={q.type} onChange={(e) => updateQuestion(currentResearch.id, q.id, 'type', e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase">
+                                                     <option value="multiple">Múltipla</option>
+                                                     <option value="rating">Rating</option>
+                                                     <option value="text">Texto</option>
+                                                  </select>
+                                                  {q.type === 'multiple' && (
+                                                     <input type="text" value={q.options?.join(', ')} onChange={(e) => updateQuestion(currentResearch.id, q.id, 'options', e.target.value.split(',').map(s => s.trim()))} className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-medium" placeholder="Opções separadas por vírgula..." />
+                                                  )}
+                                               </div>
+                                            </div>
+                                         </div>
+                                      </div>
+                                   ))}
+                                </div>
+                             </div>
+                          </div>
+
+                          <div className="col-span-4 space-y-10">
+                             <div className="bg-slate-50 rounded-[2.5rem] p-8 space-y-6">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identidade</h4>
+                                <div className="aspect-video rounded-3xl overflow-hidden border border-white shadow-soft-lg">
+                                   <img src={formatDriveUrl(currentResearch.image)} className="w-full h-full object-cover" alt="" />
+                                </div>
+                                <input type="text" value={currentResearch.image} onChange={(e) => updateResearchField(currentResearch.id, 'image', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-medium outline-none" />
+                                <div className="grid grid-cols-2 gap-4">
+                                   <div>
+                                      <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Edição</label>
+                                      <input type="number" value={currentResearch.number} onChange={(e) => updateResearchField(currentResearch.id, 'number', Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-black text-center" />
+                                   </div>
+                                   <div>
+                                      <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ano</label>
+                                      <input type="number" value={currentResearch.year} onChange={(e) => updateResearchField(currentResearch.id, 'year', Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-black text-center" />
+                                   </div>
+                                </div>
+                             </div>
+
+                             <div className="p-8 bg-red-50 rounded-[2.5rem] space-y-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-red-400">Zona de Perigo</h4>
+                                <button onClick={() => removeResearch(currentResearch.id)} className="w-full py-4 bg-white text-red-500 rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-sm hover:bg-red-500 hover:text-white transition-all">Excluir Edição</button>
+                             </div>
+                          </div>
+                       </div>
+                     ) : (
+                       <div className="space-y-16">
+                          <div className="grid grid-cols-3 gap-8">
+                             <div className="bg-slate-900 p-10 rounded-[3rem] text-white">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Respostas</div>
+                                <div className="text-5xl font-black">{statsAvailable}</div>
+                             </div>
+                             <div className="bg-slate-50 p-10 rounded-[3rem]">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Status</div>
+                                <div className="text-2xl font-black text-slate-900 uppercase">Coleta Ativa</div>
+                             </div>
+                             <div className="bg-slate-50 p-10 rounded-[3rem]">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Edição</div>
+                                <div className="text-2xl font-black text-slate-900 uppercase">#{String(currentResearch.number).padStart(2, '0')}/{currentResearch.year}</div>
+                             </div>
+                          </div>
+
+                          <div className="bg-slate-50 rounded-[3rem] p-12 space-y-10">
+                             <h3 className="text-xl font-black text-slate-900">Escrita Analítica</h3>
+                             <div className="space-y-8">
+                                <div>
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Insight Principal</label>
+                                   <input type="text" value={currentResearch.mainInsight} onChange={(e) => updateResearchField(currentResearch.id, 'mainInsight', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-6 text-2xl font-serif italic text-slate-900 shadow-sm focus:border-slate-900 outline-none transition-all" />
+                                </div>
+                                <div>
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Resumo Executivo</label>
+                                   <textarea rows={4} value={currentResearch.executiveSummary} onChange={(e) => updateResearchField(currentResearch.id, 'executiveSummary', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-6 text-lg font-medium text-slate-600 shadow-sm focus:border-slate-900 outline-none leading-relaxed" />
+                                </div>
+                                <div>
+                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Corpo do Artigo</label>
+                                   <textarea rows={15} value={currentResearch.content} onChange={(e) => updateResearchField(currentResearch.id, 'content', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-8 text-lg font-serif text-slate-700 shadow-sm focus:border-slate-900 outline-none leading-relaxed" />
+                                </div>
+                             </div>
+                          </div>
+
+                          <div className="space-y-20 pt-10">
+                             {currentResearch.questions.map((q, i) => {
+                                const stats = getStats(currentResearch.id, q.id);
+                                return (
+                                   <div key={q.id} className="space-y-8">
+                                      <div className="flex gap-4 items-center">
+                                         <span className="text-5xl font-black text-slate-100">0{i+1}</span>
+                                         <h4 className="text-2xl font-black text-slate-900">{q.label}</h4>
+                                      </div>
+                                      {q.type !== 'text' && (
+                                         <div className="bg-white border border-slate-100 rounded-[3rem] p-10 shadow-soft-2xl h-[450px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                               {q.type === 'multiple' ? (
+                                                  <BarChart data={stats} layout="vertical">
+                                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                                                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={120} tick={{ fontSize: 11, fontWeight: 'bold' }} />
+                                                     <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                                                     <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={32}>
+                                                        {stats.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                                     </Bar>
+                                                  </BarChart>
+                                               ) : (
+                                                  <PieChart>
+                                                     <Pie data={stats} innerRadius={80} outerRadius={130} paddingAngle={8} dataKey="value">
+                                                        {stats.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                                     </Pie>
+                                                     <Tooltip />
+                                                     <Legend />
+                                                  </PieChart>
+                                               )}
+                                            </ResponsiveContainer>
+                                         </div>
+                                      )}
+                                   </div>
+                                );
+                             })}
+                          </div>
+                       </div>
+                     )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Social settings */}
+          {activeTab === 'social' && (
+            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl space-y-12">
+               <div className="grid grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Redes Sociais</h4>
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Facebook URL</label>
+                        <input type="text" value={localData.social.facebook} onChange={(e) => updateSection('social', 'facebook', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                     </div>
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Instagram URL</label>
+                        <input type="text" value={localData.social.instagram} onChange={(e) => updateSection('social', 'instagram', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                     </div>
+                  </div>
+                  <div className="space-y-6">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rodapé</h4>
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Newsletter Título</label>
+                        <input type="text" value={localData.footer.newsletterTitle} onChange={(e) => updateSection('footer', 'newsletterTitle', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                     </div>
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Newsletter Descrição</label>
+                        <input type="text" value={localData.footer.newsletterDesc} onChange={(e) => updateSection('footer', 'newsletterDesc', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                     </div>
+                  </div>
+               </div>
+                
+                <div className="pt-12 border-t border-slate-100">
+                  <div className="bg-red-50 p-8 rounded-[2.5rem] border border-red-100 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="space-y-2">
+                       <h4 className="text-sm font-black text-red-900 uppercase tracking-widest">Sincronização de Emergência</h4>
+                       <p className="text-xs text-red-700 font-medium max-w-md">Se o seu painel editorial não atualizou, utilize este botão para forçar a limpeza do banco de dados local e carregar o novo sistema.</p>
+                    </div>
+                    <button 
+                      onClick={() => { if(confirm('Isso resetará os dados para o padrão editorial. Continuar?')){ resetData(); window.location.reload(); } }}
+                      className="px-8 py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-700 shadow-xl shadow-red-200 transition-all whitespace-nowrap"
+                    >
+                      Resetar e Atualizar Sistema
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {/* Branding */}
+          {activeTab === 'branding' && (
+            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl space-y-8">
+               <div className="space-y-6">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">URL da Logomarca (PNG transparente)</label>
+                  <div className="p-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-center">
+                    {localData.branding.logoUrl ? (
+                      <img src={formatDriveUrl(localData.branding.logoUrl)} className="h-20 mx-auto" alt="Logo" />
+                    ) : (
+                      <div className="text-slate-300 font-black text-3xl italic">PULSO</div>
+                    )}
+                  </div>
+                  <input type="text" value={localData.branding.logoUrl} onChange={(e) => updateSection('branding', 'logoUrl', e.target.value)} placeholder="https://..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+               </div>
+               <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Tagline do Cabeçalho</label>
+                    <input type="text" value={localData.branding.tagline} onChange={(e) => updateSection('branding', 'tagline', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                  </div>
+                  <div className="flex items-center pt-6">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" checked={localData.branding.showTagline} onChange={(e) => updateSection('branding', 'showTagline', e.target.checked)} className="w-6 h-6 rounded-lg border-slate-200 text-slate-900 focus:ring-slate-900" />
+                      <span className="text-sm font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900">Exibir slogan no site</span>
+                    </label>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {/* Hero settings */}
+          {activeTab === 'hero' && (
+            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl space-y-12">
+               <div className="grid grid-cols-12 gap-12">
+                  <div className="col-span-8 space-y-8">
+                     <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Título do Hero</label>
+                        <input type="text" value={localData.hero.title} onChange={(e) => updateSection('hero', 'title', e.target.value)} className="w-full text-3xl font-black tracking-tight outline-none border-b border-slate-100 pb-4 focus:border-slate-900" />
+                     </div>
+                     <div className="grid grid-cols-2 gap-6">
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Tag de Destaque</label>
+                           <input type="text" value={localData.hero.tag} onChange={(e) => updateSection('hero', 'tag', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                        </div>
+                        <div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Texto do Botão</label>
+                           <input type="text" value={localData.hero.buttonText} onChange={(e) => updateSection('hero', 'buttonText', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                        </div>
+                     </div>
+                  </div>
+                  <div className="col-span-4 space-y-6">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Imagem do Hero</label>
+                     <div className="aspect-square rounded-3xl overflow-hidden border border-slate-100 shadow-soft-xl">
+                        <img src={formatDriveUrl(localData.hero.imageUrl)} className="w-full h-full object-cover" alt="" />
+                     </div>
+                     <input type="text" value={localData.hero.imageUrl} onChange={(e) => updateSection('hero', 'imageUrl', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] outline-none" />
+                  </div>
+               </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-serif: "Bodoni Moda", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-primary: #000000;
+  --color-primary-hover: #1a1a1a;
+  --color-accent: #000000;
+  --color-bg-app: #fcfcfd;
+  --color-sidebar-bg: #ffffff;
+  --color-text-main: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border-main: #e2e8f0;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  
+  --radius-3xl: 32px;
+  --radius-2xl: 24px;
+  --radius-xl: 12px;
+  --radius-md: 6px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-app);
+    color: var(--color-text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .prose, .markdown-body {
+    max-width: none;
+    color: var(--color-text-main) !important;
+  }
+  
+  .prose h1, .prose h2, .prose h3 {
+    color: var(--color-primary) !important;
+    font-weight: 900;
+  }
+
+  .shadow-premium {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .shadow-soft-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  }
+
+  .animate-heartbeat {
+    animation: heartbeat 1.5s ease-in-out infinite;
+  }
+
+  @keyframes heartbeat {
+    0% { transform: scale(1); }
+    14% { transform: scale(1.1); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.1); }
+    70% { transform: scale(1); }
+  }
+
+  .heartbeat-line {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);
+    overflow: hidden;
+  }
+
+  .heartbeat-line::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, white 50%, transparent 100%);
+    animation: scan 2s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+}
+
+@layer components {
+  .btn-premium {
+    @apply px-8 py-4 rounded-full font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg hover:shadow-primary/20 hover:-translate-y-1;
+  }
+}
+
+/* --- Estilos de Impressão (Relatórios PDF Profissionais) --- */
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+
+  html, body {
+    background: white !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 11pt; /* Tamanho padrão de documento */
+  }
+
+  /* Esconder elementos de interface web */
+  nav, footer, aside, button, .print-hidden, .admin-link, .no-print {
+    display: none !important;
+  }
+
+  /* Estrutura de Relatório A4 */
+  .max-w-4xl, .max-w-6xl, .max-w-5xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Forçar Quebras de Página */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .no-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Artigo em PDF */
+  article {
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #334155 !important;
+  }
+
+  /* Gráficos em PDF */
+  .recharts-responsive-container {
+    page-break-inside: avoid;
+  }
+
+  /* Cores e Fundos */
+  .bg-slate-900 {
+    background-color: #0f172a !important;
+    color: white !important;
+    border-radius: 1cm !important;
+  }
+
+  .bg-slate-50, .bg-white {
+    background-color: white !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .shadow-soft-2xl, .shadow-soft-xl {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Forçar Títulos em Preto */
+  h1, h2, h3, h4 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+}
