@@ -21,7 +21,9 @@ import {
   Globe,
   Search,
   PenTool,
-  Award
+  Award,
+  Mail,
+  BookOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
@@ -180,6 +182,43 @@ export default function Admin() {
       researches: prev.researches.map(r => 
         r.id === researchId ? { ...r, questions: r.questions.filter(q => q.id !== qId) } : r
       )
+    }));
+  };
+
+  const removeSubscriber = (id: string) => {
+    if (confirm('Excluir este contato da lista?')) {
+      setLocalData(prev => ({
+        ...prev,
+        subscribers: prev.subscribers.filter(s => s.id !== id)
+      }));
+    }
+  };
+
+  const addPartner = () => {
+    const newPartner = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: 'NOVA MARCA',
+      style: 'serif' as const,
+      isItalic: false,
+      isUppercase: true
+    };
+    setLocalData(prev => ({
+      ...prev,
+      partners: [...prev.partners, newPartner]
+    }));
+  };
+
+  const updatePartner = (id: string, field: string, value: any) => {
+    setLocalData(prev => ({
+      ...prev,
+      partners: prev.partners.map(p => p.id === id ? { ...p, [field]: value } : p)
+    }));
+  };
+
+  const removePartner = (id: string) => {
+    setLocalData(prev => ({
+      ...prev,
+      partners: prev.partners.filter(p => p.id !== id)
     }));
   };
 
@@ -423,8 +462,11 @@ export default function Admin() {
           {[
             { id: 'branding', label: 'Identidade', icon: Settings },
             { id: 'hero', label: 'Hero / Destaque', icon: Layout },
-            { id: 'opinion', label: 'Editorial Office', icon: PenTool },
+            { id: 'opinion', label: 'Escritório Editorial', icon: PenTool },
             { id: 'research', label: 'Pesquisas', icon: BarChartIcon },
+            { id: 'newsletter', label: 'Newsletter', icon: Mail },
+            { id: 'partners', label: 'Parceiros & Contato', icon: Share2 },
+            { id: 'about', label: 'Sobre', icon: BookOpen },
             { id: 'social', label: 'Configurações', icon: Globe },
           ].map(tab => (
             <button
@@ -456,17 +498,19 @@ export default function Admin() {
             {activeTab === 'hero' && 'Destaque Principal'}
             {activeTab === 'opinion' && 'Escritório Editorial'}
             {activeTab === 'research' && 'Sistema de Pesquisas'}
+            {activeTab === 'newsletter' && 'Gestão de Leads / Newsletter'}
+            {activeTab === 'partners' && 'Parceiros & Contato'}
             {activeTab === 'social' && 'Redes e Rodapé'}
           </h2>
 
           <div className="flex gap-4">
             <button 
               onClick={handleSave}
-              className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-2xl ${
+              className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${
                 isSaved ? 'bg-green-500 text-white shadow-green-200' : 'bg-slate-900 hover:bg-black text-white shadow-slate-200'
               }`}
             >
-              {isSaved ? 'DADOS SALVOS' : <><Save size={18} /> Salvar Alterações</>}
+              {isSaved ? 'DADOS SALVOS COM SUCESSO' : <><Save size={18} /> Salvar Alterações</>}
             </button>
           </div>
         </header>
@@ -838,30 +882,111 @@ export default function Admin() {
 
           {/* Branding */}
           {activeTab === 'branding' && (
-            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl space-y-8">
-               <div className="space-y-6">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">URL da Logomarca (PNG transparente)</label>
-                  <div className="p-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-center">
-                    {localData.branding.logoUrl ? (
-                      <img src={formatDriveUrl(localData.branding.logoUrl)} className="h-20 mx-auto" alt="Logo" />
-                    ) : (
-                      <div className="text-slate-300 font-black text-3xl italic">PULSO</div>
-                    )}
+            <div className="space-y-10">
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Logotipo do Portal</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                  <div className="space-y-6">
+                    <div className="p-12 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center flex items-center justify-center min-h-[200px] overflow-hidden">
+                      {localData.branding.logoUrl ? (
+                        <img src={formatDriveUrl(localData.branding.logoUrl)} className="max-h-32 object-contain" alt="Logo Preview" />
+                      ) : (
+                        <div className="space-y-2">
+                          <ImageIcon size={48} className="mx-auto text-slate-200 mb-2" />
+                          <div className="text-slate-300 font-black text-2xl tracking-tighter uppercase italic">TEXTO: PULSO</div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhuma imagem detectada</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <input type="text" value={localData.branding.logoUrl} onChange={(e) => updateSection('branding', 'logoUrl', e.target.value)} placeholder="https://..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
-               </div>
-               <div className="grid grid-cols-2 gap-8">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Tagline do Cabeçalho</label>
-                    <input type="text" value={localData.branding.tagline} onChange={(e) => updateSection('branding', 'tagline', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-slate-900 outline-none" />
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Link da Logomarca (Drive ou URL direta)</label>
+                      <input 
+                        type="text" 
+                        value={localData.branding.logoUrl} 
+                        onChange={(e) => updateSection('branding', 'logoUrl', e.target.value)} 
+                        placeholder="https://google-drive-link-da-logo.png" 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                      />
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest">
+                      Dica: Use imagens em formato PNG com fundo transparente para um acabamento premium. Se deixar vazio, o sistema exibirá o nome "PULSO" em tipografia Bodoni.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Slogan & Visibilidade</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Texto da Tagline</label>
+                    <input 
+                      type="text" 
+                      value={localData.branding.tagline} 
+                      onChange={(e) => updateSection('branding', 'tagline', e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                    />
                   </div>
                   <div className="flex items-center pt-6">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input type="checkbox" checked={localData.branding.showTagline} onChange={(e) => updateSection('branding', 'showTagline', e.target.checked)} className="w-6 h-6 rounded-lg border-slate-200 text-slate-900 focus:ring-slate-900" />
-                      <span className="text-sm font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900">Exibir slogan no site</span>
+                    <label className="flex items-center gap-4 cursor-pointer group p-6 bg-slate-50 rounded-2xl w-full border border-transparent hover:border-slate-200 transition-all">
+                      <input 
+                        type="checkbox" 
+                        checked={localData.branding.showTagline} 
+                        onChange={(e) => updateSection('branding', 'showTagline', e.target.checked)} 
+                        className="w-6 h-6 rounded-lg border-slate-200 text-slate-900 focus:ring-slate-900" 
+                      />
+                      <div>
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-900 block">Exibir slogan no site</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Ativar/Desativar no cabeçalho</span>
+                      </div>
                     </label>
                   </div>
-               </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sobre Content */}
+          {activeTab === 'about' && (
+            <div className="space-y-10">
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Conteúdo da Página Sobre</h3>
+                <div className="space-y-8">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Título Principal</label>
+                    <input 
+                      type="text" 
+                      value={localData.about.title} 
+                      onChange={(e) => updateSection('about', 'title', e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Citação / Quote</label>
+                    <textarea 
+                      value={localData.about.quote} 
+                      onChange={(e) => updateSection('about', 'quote', e.target.value)} 
+                      rows={3}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all resize-none" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Texto Detalhado</h3>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">História / Manifesto</label>
+                  <textarea 
+                    value={localData.about.detailedText} 
+                    onChange={(e) => updateSection('about', 'detailedText', e.target.value)} 
+                    rows={8}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all resize-none" 
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -893,6 +1018,215 @@ export default function Admin() {
                      <input type="text" value={localData.hero.imageUrl} onChange={(e) => updateSection('hero', 'imageUrl', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-[10px] outline-none" />
                   </div>
                </div>
+            </div>
+          )}
+
+          {/* Newsletter / Leads */}
+          {activeTab === 'newsletter' && (
+            <div className="space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Total de Inscritos</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.subscribers.length}</div>
+                  <div className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><CheckCircle size={12} /> Audiência Ativa</div>
+                </div>
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Taxa de Conversão</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">--</div>
+                  <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Globe size={12} /> Em processamento</div>
+                </div>
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl flex flex-col justify-center">
+                  <button className="flex items-center justify-center gap-3 w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all">
+                    <Download size={18} /> Exportar Lista (.CSV)
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-soft-2xl overflow-hidden">
+                <div className="p-12 space-y-10">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Lista de Contatos</h3>
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                      <input type="text" placeholder="Buscar e-mail..." className="pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs outline-none focus:bg-white focus:border-slate-200 transition-all min-w-[280px]" />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-50">
+                          <th className="text-left py-6 text-[10px] font-black uppercase tracking-widest text-slate-300">E-mail do Usuário</th>
+                          <th className="text-left py-6 text-[10px] font-black uppercase tracking-widest text-slate-300">Data de Inscrição</th>
+                          <th className="text-right py-6 text-[10px] font-black uppercase tracking-widest text-slate-300">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {localData.subscribers.map((subscriber) => (
+                          <tr key={subscriber.id} className="group hover:bg-slate-50 transition-all">
+                            <td className="py-6">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                  <Mail size={16} />
+                                </div>
+                                <span className="font-bold text-slate-900">{subscriber.email}</span>
+                              </div>
+                            </td>
+                            <td className="py-6">
+                              <span className="text-xs font-medium text-slate-500">{subscriber.date}</span>
+                            </td>
+                            <td className="py-6 text-right">
+                              <button 
+                                onClick={() => removeSubscriber(subscriber.id)}
+                                className="p-3 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {localData.subscribers.length === 0 && (
+                      <div className="text-center py-20">
+                         <Mail size={48} className="mx-auto text-slate-100 mb-4" />
+                         <p className="text-slate-300 font-black uppercase tracking-widest text-[10px]">A lista de newsletter está vazia no momento.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Parceiros & Contato */}
+          {activeTab === 'partners' && (
+            <div className="space-y-12 pb-20">
+              {/* Informações de Contato */}
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Informações de Contato Oficiais</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">E-mail de Contato</label>
+                    <input 
+                      type="text" 
+                      value={localData.contact.email} 
+                      onChange={(e) => updateSection('contact', 'email', e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Telefone / WhatsApp</label>
+                    <input 
+                      type="text" 
+                      value={localData.contact.phone} 
+                      onChange={(e) => updateSection('contact', 'phone', e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Endereço Físico</label>
+                    <input 
+                      type="text" 
+                      value={localData.contact.address} 
+                      onChange={(e) => updateSection('contact', 'address', e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Ticker de Parceiros */}
+              <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-soft-2xl overflow-hidden">
+                <div className="p-12 space-y-10">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">Apoio Institucional (Marcas)</h3>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">As marcas abaixo aparecerão no "ticker" infinito do site.</p>
+                    </div>
+                    <button 
+                      onClick={addPartner}
+                      className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-3xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl"
+                    >
+                      <Plus size={18} /> Adicionar Marca
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {localData.partners.map((partner) => (
+                      <div key={partner.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6 group hover:bg-white hover:shadow-soft-2xl transition-all">
+                        <div className="flex justify-between items-start">
+                          <div className={`h-16 flex items-center justify-center px-6 bg-white rounded-2xl border border-slate-100 shadow-sm min-w-[120px] transition-all
+                            ${partner.style === 'serif' ? 'font-serif' : 'font-sans'}
+                            ${partner.isItalic ? 'italic' : 'not-italic'}
+                            ${partner.isUppercase ? 'uppercase' : 'normal-case'}
+                            font-black text-xl tracking-tighter
+                          `}>
+                            {partner.name || 'MARCA'}
+                          </div>
+                          <button onClick={() => removePartner(partner.id)} className="p-2 text-slate-200 hover:text-red-500 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <input 
+                            type="text" 
+                            value={partner.name}
+                            onChange={(e) => updatePartner(partner.id, 'name', e.target.value)}
+                            placeholder="Nome da Marca"
+                            className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-slate-900"
+                          />
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                             <button 
+                                onClick={() => updatePartner(partner.id, 'style', 'serif')}
+                                className={`py-2 rounded-lg text-[8px] font-black uppercase tracking-widest border ${partner.style === 'serif' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                             >
+                                Serif
+                             </button>
+                             <button 
+                                onClick={() => updatePartner(partner.id, 'style', 'sans')}
+                                className={`py-2 rounded-lg text-[8px] font-black uppercase tracking-widest border ${partner.style === 'sans' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                             >
+                                Sans
+                             </button>
+                          </div>
+
+                          <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={partner.isItalic} 
+                                onChange={(e) => updatePartner(partner.id, 'isItalic', e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-slate-900" 
+                              />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Itálico</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={partner.isUppercase} 
+                                onChange={(e) => updatePartner(partner.id, 'isUppercase', e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-slate-900" 
+                              />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Caixa Alta</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {localData.partners.length === 0 && (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                       <Share2 size={48} className="mx-auto text-slate-200 mb-4" />
+                       <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Nenhuma marca adicionada ao ticker.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

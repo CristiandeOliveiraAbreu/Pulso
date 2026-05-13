@@ -48,6 +48,20 @@ export interface ArticleItem {
   };
 }
 
+export interface Subscriber {
+  id: string;
+  email: string;
+  date: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  style: 'serif' | 'sans';
+  isItalic: boolean;
+  isUppercase: boolean;
+}
+
 export interface BlogData {
   branding: {
     logoUrl: string;
@@ -58,6 +72,11 @@ export interface BlogData {
     facebook: string;
     instagram: string;
     twitter: string;
+  };
+  contact: {
+    email: string;
+    address: string;
+    phone: string;
   };
   hero: {
     tag: string;
@@ -87,10 +106,22 @@ export interface BlogData {
   };
   researches: ResearchItem[];
   responses: Response[];
+  subscribers: Subscriber[];
+  partners: Partner[];
   footer: {
     newsletterTitle: string;
     newsletterDesc: string;
     copyright: string;
+  };
+  about: {
+    title: string;
+    quote: string;
+    sections: {
+      id: string;
+      title: string;
+      content: string;
+    }[];
+    detailedText: string;
   };
 }
 
@@ -105,6 +136,11 @@ const DEFAULT_DATA: BlogData = {
     instagram: '#',
     twitter: '#',
   },
+  contact: {
+    email: 'contato@pulso.com.br',
+    address: 'Av. Paulista, 1000 - São Paulo, SP',
+    phone: '(11) 99999-9999',
+  },
   hero: {
     tag: 'Pesquisa atual',
     title: 'Participe da primeira pesquisa de Pulso, o seu site de notícias',
@@ -114,6 +150,28 @@ const DEFAULT_DATA: BlogData = {
     buttonText: 'CLIQUE E RESPONDA A PESQUISA!',
     buttonLink: '/pesquisa/default',
     researchId: 'default',
+  },
+  about: {
+    title: 'Sobre o Pulso',
+    quote: '"Um projeto dedicado a ouvir, entender e reportar a realidade sob uma nova perspectiva editorial."',
+    sections: [
+      {
+        id: 'missao',
+        title: 'Nossa Missão',
+        content: 'Transformar dados brutos e opiniões isoladas em inteligência editorial coletiva, dando voz ao que realmente importa.'
+      },
+      {
+        id: 'editorial',
+        title: 'Editorial',
+        content: 'Mantemos um padrão de independência e rigor analítico, priorizando a profundidade em vez da velocidade superficial.'
+      },
+      {
+        id: 'comunidade',
+        title: 'Comunidade',
+        content: 'O Pulso não existe sem você. Cada pesquisa respondida alimenta o motor da nossa análise jornalística.'
+      }
+    ],
+    detailedText: 'O Pulso nasceu da necessidade de conectar o jornalismo de opinião com a realidade estatística das ruas. Em um mundo saturado de informações rápidas, escolhemos o caminho da pausa, da escuta e da profundidade.\n\nCada edição do Pulso é acompanhada de uma pesquisa proprietária, cujos resultados moldam nossos editoriais e oferecem aos nossos leitores uma visão clara do que a sociedade está pensando agora.'
   },
   articles: [
     {
@@ -171,6 +229,15 @@ const DEFAULT_DATA: BlogData = {
     }
   ],
   responses: [],
+  subscribers: [],
+  partners: [
+    { id: '1', name: 'PULSO', style: 'serif', isItalic: false, isUppercase: true },
+    { id: '2', name: 'REDAÇÃO', style: 'sans', isItalic: true, isUppercase: true },
+    { id: '3', name: 'ESTADUAL', style: 'serif', isItalic: false, isUppercase: true },
+    { id: '4', name: 'EDITORIAL', style: 'sans', isItalic: false, isUppercase: true },
+    { id: '5', name: 'MÍDIA', style: 'serif', isItalic: true, isUppercase: false },
+    { id: '6', name: 'CONEXÃO', style: 'sans', isItalic: false, isUppercase: true },
+  ],
   footer: {
     newsletterTitle: 'Receba nossas atualizações',
     newsletterDesc: 'Fique por dentro das últimas pesquisas e opiniões diretamente no seu e-mail.',
@@ -183,6 +250,7 @@ interface BlogContextType {
   updateData: (newData: Partial<BlogData>) => void;
   resetData: () => void;
   submitResponse: (response: Response) => void;
+  addSubscriber: (email: string) => void;
 }
 
 const BlogContext = createContext<BlogContextType | undefined>(undefined);
@@ -205,9 +273,11 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...DEFAULT_DATA,
         ...parsed,
         branding: { ...DEFAULT_DATA.branding, ...parsed.branding },
+        about: { ...DEFAULT_DATA.about, ...parsed.about },
         hero: { ...DEFAULT_DATA.hero, ...parsed.hero },
         opinion: { ...DEFAULT_DATA.opinion, ...parsed.opinion },
         social: { ...DEFAULT_DATA.social, ...parsed.social },
+        contact: { ...DEFAULT_DATA.contact, ...parsed.contact },
         footer: { ...DEFAULT_DATA.footer, ...parsed.footer },
         articles: Array.isArray(parsed.articles) ? parsed.articles : DEFAULT_DATA.articles,
         researches: Array.isArray(parsed.researches) ? parsed.researches.map((r: any) => ({
@@ -219,7 +289,9 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
           mainInsight: r.mainInsight || 'Destaque principal dos resultados.',
           questions: Array.isArray(r.questions) ? r.questions : []
         })) : DEFAULT_DATA.researches,
-        responses: Array.isArray(parsed.responses) ? parsed.responses : []
+        responses: Array.isArray(parsed.responses) ? parsed.responses : [],
+        subscribers: Array.isArray(parsed.subscribers) ? parsed.subscribers : [],
+        partners: Array.isArray(parsed.partners) ? parsed.partners : DEFAULT_DATA.partners
       };
       
       return safeData;
@@ -244,13 +316,25 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const addSubscriber = (email: string) => {
+    const newSubscriber: Subscriber = {
+      id: Math.random().toString(36).substr(2, 9),
+      email,
+      date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    };
+    setData(prev => ({
+      ...prev,
+      subscribers: [newSubscriber, ...prev.subscribers]
+    }));
+  };
+
   const resetData = () => {
     setData(DEFAULT_DATA);
     localStorage.removeItem('pulso_blog_data');
   };
 
   return (
-    <BlogContext.Provider value={{ data, updateData, resetData, submitResponse }}>
+    <BlogContext.Provider value={{ data, updateData, resetData, submitResponse, addSubscriber }}>
       {children}
     </BlogContext.Provider>
   );
