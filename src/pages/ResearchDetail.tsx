@@ -77,6 +77,12 @@ export default function ResearchDetail() {
           <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">{research.date}</span>
           <h1 className="text-5xl font-sans font-black text-slate-900 tracking-tight leading-tight">{research.title}</h1>
           <p className="text-slate-500 text-lg leading-relaxed">{research.description}</p>
+          
+          {research.introText && (
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 mt-8">
+              <p className="text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">{research.introText}</p>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-12">

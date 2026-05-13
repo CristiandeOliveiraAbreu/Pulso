@@ -23,11 +23,15 @@ import {
   PenTool,
   Award,
   Mail,
-  BookOpen
+  BookOpen,
+  Upload,
+  ThumbsDown,
+  MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { formatDriveUrl } from '../utils/formatters';
+import { supabase } from '../lib/supabase';
 
 export default function Admin() {
   const { data, updateData, resetData } = useBlog();
@@ -423,8 +427,26 @@ export default function Admin() {
             </div>
 
             <div className="pt-10 border-t border-slate-100">
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="bg-slate-50 p-4 rounded-2xl text-center">
+                  <Heart size={16} className="mx-auto mb-2 text-red-500" fill="currentColor" />
+                  <div className="text-lg font-black text-slate-900">{currentArticle.stats.likes}</div>
+                  <div className="text-[8px] font-black uppercase text-slate-400">Likes</div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl text-center">
+                  <ThumbsDown size={16} className="mx-auto mb-2 text-slate-400" />
+                  <div className="text-lg font-black text-slate-900">{currentArticle.stats.dislikes}</div>
+                  <div className="text-[8px] font-black uppercase text-slate-400">Nãos</div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl text-center">
+                  <MessageCircle size={16} className="mx-auto mb-2 text-slate-400" />
+                  <div className="text-lg font-black text-slate-900">{currentArticle.stats.comments}</div>
+                  <div className="text-[8px] font-black uppercase text-slate-400">Coment.</div>
+                </div>
+              </div>
+
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Visuais</h3>
-              <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner">
+              <div className="aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner mb-6">
                 {currentArticle.imageUrl ? (
                   <img src={formatDriveUrl(currentArticle.imageUrl)} className="w-full h-full object-cover" alt="Preview" />
                 ) : (
@@ -432,6 +454,59 @@ export default function Admin() {
                     <ImageIcon size={24} />
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <input 
+                    type="file" 
+                    id={`article-img-${currentArticle.id}`} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `article-${Date.now()}.${fileExt}`;
+                        const filePath = `articles/${fileName}`;
+
+                        const { error: uploadError } = await supabase.storage
+                          .from('branding') // Using same bucket for now, ideally separate
+                          .upload(filePath, file);
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('branding')
+                          .getPublicUrl(filePath);
+
+                        updateArticle(currentArticle.id, 'imageUrl', publicUrl);
+                        alert('Imagem enviada com sucesso!');
+                      } catch (error: any) {
+                        alert('Erro ao enviar imagem: ' + error.message);
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor={`article-img-${currentArticle.id}`}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-black cursor-pointer transition-all shadow-lg"
+                  >
+                    <Upload size={14} /> Trocar Imagem (Upload)
+                  </label>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Ou cole a URL da imagem</label>
+                  <input 
+                    type="text" 
+                    value={currentArticle.imageUrl}
+                    onChange={(e) => updateArticle(currentArticle.id, 'imageUrl', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] font-medium outline-none focus:border-slate-900"
+                    placeholder="https://exemplo.com/imagem.jpg"
+                  />
+                </div>
               </div>
             </div>
             
@@ -533,9 +608,12 @@ export default function Admin() {
                   <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> Não publicados</div>
                 </div>
                 <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Publicados</div>
-                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.filter(a => a.status === 'published').length}</div>
-                  <div className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><Globe size={12} /> Ao vivo no ar</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Engajamento</div>
+                  <div className="text-4xl font-black text-slate-900 mb-4 flex items-center gap-4">
+                    <span className="flex items-center gap-2 text-red-500"><Heart size={24} fill="currentColor" /> {localData.articles.reduce((acc, a) => acc + a.stats.likes, 0)}</span>
+                    <span className="flex items-center gap-2 text-slate-400"><ThumbsDown size={24} /> {localData.articles.reduce((acc, a) => acc + a.stats.dislikes, 0)}</span>
+                  </div>
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><MessageCircle size={12} /> {localData.articles.reduce((acc, a) => acc + a.stats.comments, 0)} Total de Comentários</div>
                 </div>
               </div>
 
@@ -695,7 +773,12 @@ export default function Admin() {
                              </div>
                              <div className="space-y-6">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Descrição e Objetivo</label>
-                                <textarea rows={4} value={currentResearch.description} onChange={(e) => updateResearchField(currentResearch.id, 'description', e.target.value)} className="w-full text-lg font-medium text-slate-500 outline-none leading-relaxed" />
+                                <textarea rows={2} value={currentResearch.description} onChange={(e) => updateResearchField(currentResearch.id, 'description', e.target.value)} className="w-full text-lg font-medium text-slate-500 outline-none leading-relaxed resize-none" />
+                             </div>
+
+                             <div className="space-y-6 pt-4">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Texto de Introdução (Instruções da Pesquisa)</label>
+                                <textarea rows={6} value={currentResearch.introText || ''} onChange={(e) => updateResearchField(currentResearch.id, 'introText', e.target.value)} placeholder="Explique os detalhes da pesquisa, regras ou objetivos aqui. Este texto aparecerá antes das perguntas." className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] px-8 py-6 text-sm font-medium text-slate-600 outline-none focus:border-slate-900 transition-all resize-none" />
                              </div>
                              
                              <div className="pt-10 border-t border-slate-100 space-y-8">
@@ -732,10 +815,72 @@ export default function Admin() {
                           <div className="col-span-4 space-y-10">
                              <div className="bg-slate-50 rounded-[2.5rem] p-8 space-y-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identidade</h4>
-                                <div className="aspect-video rounded-3xl overflow-hidden border border-white shadow-soft-lg">
-                                   <img src={formatDriveUrl(currentResearch.image)} className="w-full h-full object-cover" alt="" />
-                                </div>
-                                <input type="text" value={currentResearch.image} onChange={(e) => updateResearchField(currentResearch.id, 'image', e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-medium outline-none" />
+                                <div className="aspect-video rounded-3xl overflow-hidden bg-slate-100 border border-white shadow-soft-lg flex items-center justify-center">
+                                   {currentResearch.image ? (
+                                     <img 
+                                       src={formatDriveUrl(currentResearch.image)} 
+                                       className="w-full h-full object-cover" 
+                                       alt="Preview" 
+                                       onError={(e) => {
+                                         (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=800';
+                                       }}
+                                     />
+                                   ) : (
+                                     <div className="text-slate-300">Sem imagem</div>
+                                   )}
+                                 </div>
+                                 
+                                 <div className="space-y-4">
+                                   <div className="relative">
+                                     <input 
+                                       type="file" 
+                                       id={`research-img-${currentResearch.id}`} 
+                                       className="hidden" 
+                                       accept="image/*"
+                                       onChange={async (e) => {
+                                         const file = e.target.files?.[0];
+                                         if (!file) return;
+                                         
+                                         try {
+                                           const fileExt = file.name.split('.').pop();
+                                           const fileName = `research-${Date.now()}.${fileExt}`;
+                                           const filePath = `researches/${fileName}`;
+
+                                           const { error: uploadError } = await supabase.storage
+                                             .from('branding')
+                                             .upload(filePath, file);
+
+                                           if (uploadError) throw uploadError;
+
+                                           const { data: { publicUrl } } = supabase.storage
+                                             .from('branding')
+                                             .getPublicUrl(filePath);
+
+                                           updateResearchField(currentResearch.id, 'image', publicUrl);
+                                         } catch (error) {
+                                           console.error('Error uploading image:', error);
+                                           alert('Erro ao carregar imagem. Verifique sua conexão.');
+                                         }
+                                       }}
+                                     />
+                                     <label 
+                                       htmlFor={`research-img-${currentResearch.id}`}
+                                       className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-900 hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
+                                     >
+                                       <Upload size={16} /> Carregar Arquivo
+                                     </label>
+                                   </div>
+
+                                   <div className="relative">
+                                     <input 
+                                       type="text" 
+                                       value={currentResearch.image} 
+                                       onChange={(e) => updateResearchField(currentResearch.id, 'image', e.target.value)} 
+                                       placeholder="Ou cole a URL da imagem aqui..."
+                                       className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-[10px] font-medium outline-none focus:border-slate-900" 
+                                     />
+                                   </div>
+                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                    <div>
                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-2">Edição</label>
@@ -901,17 +1046,60 @@ export default function Admin() {
                   </div>
                   <div className="space-y-6">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Link da Logomarca (Drive ou URL direta)</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Link da Logomarca (ou Upload abaixo)</label>
                       <input 
                         type="text" 
                         value={localData.branding.logoUrl} 
                         onChange={(e) => updateSection('branding', 'logoUrl', e.target.value)} 
-                        placeholder="https://google-drive-link-da-logo.png" 
+                        placeholder="https://link-da-logo.png" 
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:border-slate-900 outline-none font-medium transition-all" 
                       />
                     </div>
+                    
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        id="logo-upload" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          try {
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `logo-${Math.random()}.${fileExt}`;
+                            const filePath = `${fileName}`;
+
+                            // Upload to 'branding' bucket
+                            const { error: uploadError } = await supabase.storage
+                              .from('branding')
+                              .upload(filePath, file);
+
+                            if (uploadError) throw uploadError;
+
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('branding')
+                              .getPublicUrl(filePath);
+
+                            updateSection('branding', 'logoUrl', publicUrl);
+                            alert('Logo enviada com sucesso!');
+                          } catch (error: any) {
+                            console.error('Erro no upload:', error.message);
+                            alert('Erro ao enviar imagem. Verifique se o bucket "branding" existe no seu Supabase.');
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor="logo-upload"
+                        className="flex items-center justify-center gap-3 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black cursor-pointer transition-all shadow-lg"
+                      >
+                        <Upload size={16} /> Anexar Imagem (Upload)
+                      </label>
+                    </div>
+
                     <p className="text-[9px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest">
-                      Dica: Use imagens em formato PNG com fundo transparente para um acabamento premium. Se deixar vazio, o sistema exibirá o nome "PULSO" em tipografia Bodoni.
+                      Dica: Use imagens em formato PNG com fundo transparente para um acabamento premium. O upload requer um Bucket chamado "branding" no seu Supabase.
                     </p>
                   </div>
                 </div>

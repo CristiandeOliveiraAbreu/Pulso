@@ -95,7 +95,7 @@ export default function BlogResearch() {
               <h2 className="text-5xl font-sans font-black text-black tracking-tight">Editoriais & Opiniões</h2>
             </div>
             <Link to="/conteudo" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-black border-b-2 border-black pb-1 hover:opacity-50 transition-all">
-              VER OS POSTS
+              VER TODOS OS ARTIGOS
             </Link>
           </div>
 
@@ -103,11 +103,11 @@ export default function BlogResearch() {
             {opinions.slice(0, 1).map((article) => (
               <div key={article.id} className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                 <div className="lg:col-span-7">
-                  <div className="relative rounded-[3rem] overflow-hidden shadow-premium aspect-[16/10] group cursor-pointer">
+                  <div className="relative rounded-[3rem] overflow-hidden shadow-premium aspect-video group cursor-pointer bg-white border border-slate-100 flex items-center justify-center">
                     <img 
                       src={formatDriveUrl(article.imageUrl)} 
                       alt={article.title}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 p-8"
                     />
                   </div>
                 </div>

@@ -150,8 +150,8 @@ export default function ResearchResults() {
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Participantes</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-black text-slate-900">{research.date.split(' ')[0]}</div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Mês de Coleta</div>
+              <div className="text-3xl font-black text-slate-900">{research.date.split(' ')[0]} {research.year}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Data de Coleta</div>
             </div>
           </div>
         </header>

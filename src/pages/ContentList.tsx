@@ -30,11 +30,11 @@ export default function ContentList() {
               className="group"
             >
               <Link to={`/artigo/${article.id}`}>
-                <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden mb-6 shadow-premium bg-slate-50">
+                <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden mb-6 shadow-premium bg-white border border-slate-100 flex items-center justify-center p-6">
                   <img 
                     src={formatDriveUrl(article.imageUrl)} 
                     alt={article.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[9px] font-black text-black shadow-sm uppercase tracking-widest">
                     {article.type === 'opinion' ? 'Editorial' : 'Notícia'}

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 export interface Question {
   id: string;
@@ -21,10 +22,18 @@ export interface ResearchItem {
   date: string;
   image: string;
   description: string;
+  introText?: string;
   executiveSummary: string;
   mainInsight: string;
   content: string;
   questions: Question[];
+}
+
+export interface CommentItem {
+  id: string;
+  author: string;
+  content: string;
+  date: string;
 }
 
 export interface ArticleItem {
@@ -44,8 +53,10 @@ export interface ArticleItem {
   stats: {
     views: number;
     likes: number;
+    dislikes: number;
     comments: number;
   };
+  commentsList?: CommentItem[];
 }
 
 export interface Subscriber {
@@ -191,8 +202,10 @@ const DEFAULT_DATA: BlogData = {
       stats: {
         views: 1240,
         likes: 124,
+        dislikes: 12,
         comments: 8
-      }
+      },
+      commentsList: []
     }
   ],
   opinion: {
@@ -206,6 +219,7 @@ const DEFAULT_DATA: BlogData = {
     readTime: '5 min de leitura',
     stats: {
       likes: 124,
+      dislikes: 12,
       comments: 8,
     },
   },
@@ -251,10 +265,12 @@ interface BlogContextType {
   resetData: () => void;
   submitResponse: (response: Response) => void;
   addSubscriber: (email: string) => void;
+  interactWithArticle: (id: string, type: 'like' | 'dislike') => void;
+  addArticleComment: (id: string, comment: Omit<CommentItem, 'id' | 'date'>) => void;
+  isLoading: boolean;
 }
 
 const BlogContext = createContext<BlogContextType | undefined>(undefined);
-
 export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<BlogData>(() => {
     const saved = localStorage.getItem('pulso_blog_data');
@@ -262,12 +278,6 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       const parsed = JSON.parse(saved);
-      
-      // FORCED MIGRATION: If articles are missing, it's an old version
-      if (!parsed.articles || !Array.isArray(parsed.articles) || parsed.articles.length === 0) {
-        console.log('Versão antiga detectada. Forçando migração...');
-        return DEFAULT_DATA;
-      }
       
       const safeData = {
         ...DEFAULT_DATA,
@@ -296,24 +306,77 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return safeData;
     } catch (e) {
-      console.error("Erro ao carregar dados do localStorage", e);
+      console.error("Erro ao carregar dados", e);
       return DEFAULT_DATA;
     }
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 1. Initial Load (Supabase -> LocalStorage -> Default)
   useEffect(() => {
-    localStorage.setItem('pulso_blog_data', JSON.stringify(data));
-  }, [data]);
+    const initData = async () => {
+      try {
+        // Try Supabase first
+        const { data: dbData, error } = await supabase
+          .from('site_data')
+          .select('content')
+          .single();
+
+        if (dbData && dbData.content) {
+          setData(dbData.content);
+          localStorage.setItem('pulso_blog_data', JSON.stringify(dbData.content));
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem('pulso_blog_data');
+          if (saved) {
+            setData(JSON.parse(saved));
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao sincronizar com Supabase:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initData();
+  }, []);
+
+  // 2. Persistence (Local + DB)
+  const persist = async (currentData: BlogData) => {
+    // Save to LocalStorage immediately
+    localStorage.setItem('pulso_blog_data', JSON.stringify(currentData));
+    
+    // Save to Supabase (Upsert into single record)
+    try {
+      await supabase
+        .from('site_data')
+        .upsert({ id: 1, content: currentData });
+    } catch (err) {
+      console.warn("DB Save Error (Offline or Table missing):", err);
+    }
+  };
 
   const updateData = (newData: Partial<BlogData>) => {
-    setData(prev => ({ ...prev, ...newData }));
+    const updated = { ...data, ...newData };
+    setData(updated);
+    persist(updated);
+  };
+
+  const resetData = () => {
+    setData(DEFAULT_DATA);
+    localStorage.removeItem('pulso_blog_data');
+    persist(DEFAULT_DATA);
   };
 
   const submitResponse = (response: Response) => {
-    setData(prev => ({
-      ...prev,
-      responses: [...prev.responses, response]
-    }));
+    const updated = {
+      ...data,
+      responses: [response, ...data.responses]
+    };
+    setData(updated);
+    persist(updated);
   };
 
   const addSubscriber = (email: string) => {
@@ -322,19 +385,59 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     };
-    setData(prev => ({
-      ...prev,
-      subscribers: [newSubscriber, ...prev.subscribers]
-    }));
+    const updated = {
+      ...data,
+      subscribers: [newSubscriber, ...data.subscribers]
+    };
+    setData(updated);
+    persist(updated);
   };
 
-  const resetData = () => {
-    setData(DEFAULT_DATA);
-    localStorage.removeItem('pulso_blog_data');
+  const addArticleComment = (id: string, comment: Omit<CommentItem, 'id' | 'date'>) => {
+    const newComment: CommentItem = {
+      ...comment,
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toLocaleDateString('pt-BR')
+    };
+
+    const updated = {
+      ...data,
+      articles: data.articles.map(a => 
+        a.id === id 
+          ? { 
+              ...a, 
+              commentsList: [newComment, ...(a.commentsList || [])],
+              stats: { ...a.stats, comments: a.stats.comments + 1 }
+            } 
+          : a
+      )
+    };
+    setData(updated);
+    persist(updated);
+  };
+
+  const interactWithArticle = (id: string, type: 'like' | 'dislike') => {
+    const updated = {
+      ...data,
+      articles: data.articles.map(a => 
+        a.id === id 
+          ? { 
+              ...a, 
+              stats: { 
+                ...a.stats, 
+                likes: type === 'like' ? a.stats.likes + 1 : a.stats.likes,
+                dislikes: type === 'dislike' ? a.stats.dislikes + 1 : a.stats.dislikes
+              } 
+            } 
+          : a
+      )
+    };
+    setData(updated);
+    persist(updated);
   };
 
   return (
-    <BlogContext.Provider value={{ data, updateData, resetData, submitResponse, addSubscriber }}>
+    <BlogContext.Provider value={{ data, updateData, resetData, submitResponse, addSubscriber, interactWithArticle, addArticleComment, isLoading }}>
       {children}
     </BlogContext.Provider>
   );
