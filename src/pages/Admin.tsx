@@ -41,6 +41,7 @@ import {
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { formatDriveUrl } from '../utils/formatters';
+import RichTextEditor from '../components/RichTextEditor';
 import { supabase } from '../lib/supabase';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6'];
@@ -338,28 +339,10 @@ export default function Admin() {
                   rows={2}
                 />
 
-                <div className="sticky top-24 z-40 flex items-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl border border-slate-100 shadow-soft-xl mb-4 w-fit mx-auto">
-                   <button onClick={() => document.execCommand('bold')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Negrito"><Bold size={16} /></button>
-                   <button onClick={() => document.execCommand('italic')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Itálico"><Italic size={16} /></button>
-                   <button onClick={() => document.execCommand('underline')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Sublinhado"><Underline size={16} /></button>
-                   <div className="w-px h-6 bg-slate-100 mx-1" />
-                   <button onClick={() => document.execCommand('justifyLeft')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignLeft size={16} /></button>
-                   <button onClick={() => document.execCommand('justifyCenter')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignCenter size={16} /></button>
-                   <button onClick={() => document.execCommand('justifyRight')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignRight size={16} /></button>
-                   <div className="w-px h-6 bg-slate-100 mx-1" />
-                   <button onClick={() => document.execCommand('insertUnorderedList')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><ListIcon size={16} /></button>
-                   <button onClick={() => document.execCommand('insertOrderedList')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><ListOrdered size={16} /></button>
-                </div>
-
-                <div 
-                  contentEditable
-                  onBlur={(e) => updateArticle(currentArticle.id, 'content', e.currentTarget.innerHTML)}
-                  dangerouslySetInnerHTML={{ __html: currentArticle.content }}
-                  className="w-full text-lg font-medium text-slate-700 outline-none min-h-[500px] leading-relaxed prose prose-slate max-w-none"
-                  style={{ 
-                    fontSize: `${currentArticle.fontSize || 18}px`,
-                    lineHeight: currentArticle.lineHeight || 1.6
-                  }}
+                <RichTextEditor 
+                  content={currentArticle.content}
+                  onChange={(html) => updateArticle(currentArticle.id, 'content', html)}
+                  primaryColor={localData.branding.primaryColor}
                 />
               </div>
             ) : (
@@ -1261,7 +1244,6 @@ export default function Admin() {
                       </div>
                    </div>
                 </div>
-              </div>
               </div>
             </div>
           )}
