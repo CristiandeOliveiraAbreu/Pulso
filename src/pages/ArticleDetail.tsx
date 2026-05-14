@@ -12,7 +12,13 @@ export default function ArticleDetail() {
   
   const article = data.articles.find(a => a.id === id);
 
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState<'like' | 'dislike' | null>(() => {
+    const history = localStorage.getItem('pulso_interaction_history');
+    if (!history) return null;
+    const interactions = JSON.parse(history);
+    return interactions[id || ''] || null;
+  });
+
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [newComment, setNewComment] = useState({ author: '', content: '' });
 
@@ -28,10 +34,23 @@ export default function ArticleDetail() {
   }
 
   const handleInteraction = (type: 'like' | 'dislike') => {
-    if (!hasInteracted) {
-      interactWithArticle(article.id, type);
-      setHasInteracted(true);
+    if (hasInteracted === type) return;
+
+    if (hasInteracted) {
+      // Switch interaction: Undo previous, Do new
+      interactWithArticle(article.id, hasInteracted, true);
+      interactWithArticle(article.id, type, false);
+    } else {
+      // First interaction
+      interactWithArticle(article.id, type, false);
     }
+
+    setHasInteracted(type);
+    
+    const history = localStorage.getItem('pulso_interaction_history');
+    const interactions = history ? JSON.parse(history) : {};
+    interactions[article.id] = type;
+    localStorage.setItem('pulso_interaction_history', JSON.stringify(interactions));
   };
 
   const handleCommentSubmit = (e: React.FormEvent) => {
@@ -93,14 +112,20 @@ export default function ArticleDetail() {
             </div>
 
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-slate-400">
-                <Heart size={20} className={article.stats.likes > 0 ? 'text-red-500 fill-red-500' : ''} /> 
-                <span className="text-[10px] font-black">{article.stats.likes}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-400">
-                <ThumbsDown size={20} /> 
-                <span className="text-[10px] font-black">{article.stats.dislikes}</span>
-              </div>
+              <button 
+                onClick={() => handleInteraction('like')}
+                className="flex items-center gap-2 group transition-all cursor-pointer"
+              >
+                <Heart size={20} className={`transition-all ${hasInteracted === 'like' ? 'text-red-500 fill-red-500 scale-110' : 'text-slate-400 group-hover:text-red-500'}`} /> 
+                <span className={`text-[10px] font-black transition-colors ${hasInteracted === 'like' ? 'text-red-500' : 'text-slate-400 group-hover:text-red-500'}`}>{article.stats.likes}</span>
+              </button>
+              <button 
+                onClick={() => handleInteraction('dislike')}
+                className="flex items-center gap-2 group transition-all cursor-pointer"
+              >
+                <ThumbsDown size={20} className={`transition-all ${hasInteracted === 'dislike' ? 'text-slate-900 scale-110' : 'text-slate-400 group-hover:text-slate-900'}`} /> 
+                <span className={`text-[10px] font-black transition-colors ${hasInteracted === 'dislike' ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-900'}`}>{article.stats.dislikes}</span>
+              </button>
               <button 
                 onClick={scrollToComments}
                 className="flex items-center gap-2 text-slate-400 hover:text-black transition-colors"
@@ -129,7 +154,7 @@ export default function ArticleDetail() {
         {/* Content */}
         <div className="max-w-2xl mx-auto">
           <div 
-            className="prose prose-slate prose-xl md:prose-2xl max-w-none font-serif text-slate-800 leading-relaxed whitespace-pre-line"
+            className="prose prose-slate prose-xl md:prose-2xl max-w-none text-slate-800 leading-relaxed whitespace-pre-line"
           >
             {article.content || article.excerpt}
           </div>
@@ -144,17 +169,15 @@ export default function ArticleDetail() {
             <div className="flex flex-wrap justify-center gap-4">
                <button 
                  onClick={() => handleInteraction('like')}
-                 disabled={hasInteracted}
-                 className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${hasInteracted ? 'bg-slate-200 text-slate-400' : 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-100'}`}
+                 className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${hasInteracted === 'like' ? 'bg-red-500 text-white shadow-lg shadow-red-100 scale-105' : 'bg-white border border-slate-200 text-slate-400 hover:border-red-500 hover:text-red-500'}`}
                >
-                 <Heart size={16} fill={hasInteracted ? 'none' : 'currentColor'} /> Gostei
+                 <Heart size={16} fill={hasInteracted === 'like' ? 'currentColor' : 'none'} /> Gostei
                </button>
                <button 
                  onClick={() => handleInteraction('dislike')}
-                 disabled={hasInteracted}
-                 className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${hasInteracted ? 'bg-slate-200 text-slate-400' : 'bg-slate-900 text-white hover:bg-black shadow-lg shadow-slate-100'}`}
+                 className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${hasInteracted === 'dislike' ? 'bg-slate-900 text-white shadow-lg shadow-slate-100 scale-105' : 'bg-white border border-slate-200 text-slate-400 hover:border-slate-900 hover:text-slate-900'}`}
                >
-                 <ThumbsDown size={16} /> Não Gostei
+                 <ThumbsDown size={16} fill={hasInteracted === 'dislike' ? 'currentColor' : 'none'} /> Não Gostei
                </button>
                <button 
                  onClick={() => setShowCommentForm(!showCommentForm)}

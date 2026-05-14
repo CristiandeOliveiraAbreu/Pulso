@@ -164,7 +164,7 @@ export default function ResearchResults() {
               <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-slate-900">Resumo dos Resultados</h2>
             </div>
             <div className="space-y-12">
-              <p className="text-2xl text-slate-800 leading-relaxed font-serif italic max-w-4xl">
+              <p className="text-2xl text-slate-800 leading-relaxed max-w-4xl font-medium">
                 {research.executiveSummary}
               </p>
               <div className="p-10 bg-slate-50 rounded-[2rem] border-2 border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-8">

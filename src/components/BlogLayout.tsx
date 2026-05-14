@@ -37,31 +37,33 @@ export function BlogLayout({ children }: BlogLayoutProps) {
       <div className="pt-16 pb-8 print:hidden">
         <div className="max-w-6xl mx-auto px-6 flex flex-col items-center">
           <div className="flex justify-between w-full mb-4 items-center">
-             <div className="w-24 md:flex hidden items-center gap-2">
-               <div className="w-1 h-1 bg-black rounded-full" />
-               <span className="text-[8px] font-black uppercase tracking-[0.3em] text-black/20">EST. 2026</span>
+             {/* Left Spacer/Branding (Balanced with right side) */}
+             <div className="w-24 flex items-center">
+               <div className="hidden md:flex items-center gap-2">
+                 <div className="w-1 h-1 bg-black rounded-full" />
+                 <span className="text-[8px] font-black uppercase tracking-[0.3em] text-black/20">EST. 2026</span>
+               </div>
              </div>
 
-             <Link to="/" className="flex flex-col items-center group">
+             <Link to="/" className="flex flex-col items-center group flex-1">
               {data.branding.logoUrl && !logoError ? (
                 <div className="relative">
                   <img 
                     src={formatDriveUrl(data.branding.logoUrl)} 
                     alt="Logomarca" 
-                    className="h-40 md:h-[480px] w-auto object-contain transition-all duration-700 group-hover:scale-105"
+                    className="h-24 md:h-[480px] w-auto object-contain transition-all duration-700 group-hover:scale-105"
                     onError={(e) => {
                       console.error("Erro ao carregar logomarca:", e);
                       setLogoError(true);
                     }}
                     onLoad={() => {
-                      console.log("Logomarca carregada com sucesso");
                       setLogoError(false);
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
                 </div>
               ) : (
-                <h1 className="text-[8rem] md:text-[27rem] font-serif font-black tracking-[-0.05em] text-black leading-none uppercase select-none transition-all duration-700 group-hover:tracking-normal px-4 text-center">
+                <h1 className="text-[5rem] md:text-[27rem] font-serif font-black tracking-[-0.05em] text-black leading-none uppercase select-none transition-all duration-700 group-hover:tracking-normal px-4 text-center">
                   PULSO
                 </h1>
               )}
@@ -111,7 +113,7 @@ export function BlogLayout({ children }: BlogLayoutProps) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-start gap-20 mb-32">
             <div className="max-w-md space-y-6">
-              <h3 className="text-3xl font-serif font-black text-black leading-tight">
+              <h3 className="text-4xl font-black text-black leading-tight uppercase tracking-tight">
                 {data.footer.newsletterTitle}
               </h3>
               <p className="text-slate-500 font-medium leading-relaxed">

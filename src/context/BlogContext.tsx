@@ -318,23 +318,33 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initData = async () => {
       try {
         // Try Supabase first
-        const { data: dbData, error } = await supabase
+        const { data: dbData, error: dbError } = await supabase
           .from('site_data')
           .select('content')
-          .single();
+          .eq('id', 1)
+          .maybeSingle();
 
         if (dbData && dbData.content) {
-          setData(dbData.content);
-          localStorage.setItem('pulso_blog_data', JSON.stringify(dbData.content));
+          // Deep merge with DEFAULT_DATA to ensure all new fields exist
+          const merged = {
+            ...DEFAULT_DATA,
+            ...dbData.content,
+            branding: { ...DEFAULT_DATA.branding, ...dbData.content.branding },
+            stats: { ...DEFAULT_DATA.stats, ...dbData.content.stats },
+            articles: Array.isArray(dbData.content.articles) ? dbData.content.articles : DEFAULT_DATA.articles,
+            researches: Array.isArray(dbData.content.researches) ? dbData.content.researches : DEFAULT_DATA.researches,
+          };
+          setData(merged);
+          localStorage.setItem('pulso_blog_data', JSON.stringify(merged));
         } else {
-          // Fallback to localStorage
+          // Fallback to localStorage if DB is empty or fails
           const saved = localStorage.getItem('pulso_blog_data');
           if (saved) {
             setData(JSON.parse(saved));
           }
         }
       } catch (err) {
-        console.error("Erro ao sincronizar com Supabase:", err);
+        console.error("Erro crítico de sincronização:", err);
       } finally {
         setIsLoading(false);
       }
@@ -416,7 +426,7 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     persist(updated);
   };
 
-  const interactWithArticle = (id: string, type: 'like' | 'dislike') => {
+  const interactWithArticle = (id: string, type: 'like' | 'dislike', undo: boolean = false) => {
     const updated = {
       ...data,
       articles: data.articles.map(a => 
@@ -425,8 +435,8 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...a, 
               stats: { 
                 ...a.stats, 
-                likes: type === 'like' ? a.stats.likes + 1 : a.stats.likes,
-                dislikes: type === 'dislike' ? a.stats.dislikes + 1 : a.stats.dislikes
+                likes: type === 'like' ? Math.max(0, a.stats.likes + (undo ? -1 : 1)) : a.stats.likes,
+                dislikes: type === 'dislike' ? Math.max(0, a.stats.dislikes + (undo ? -1 : 1)) : a.stats.dislikes
               } 
             } 
           : a
@@ -435,6 +445,15 @@ export const BlogProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setData(updated);
     persist(updated);
   };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]">
+        <div className="w-12 h-12 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin mb-4" />
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Sincronizando PULSO...</span>
+      </div>
+    );
+  }
 
   return (
     <BlogContext.Provider value={{ data, updateData, resetData, submitResponse, addSubscriber, interactWithArticle, addArticleComment, isLoading }}>

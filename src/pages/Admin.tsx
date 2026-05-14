@@ -26,12 +26,15 @@ import {
   BookOpen,
   Upload,
   ThumbsDown,
-  MessageCircle
+  MessageCircle,
+  Heart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { formatDriveUrl } from '../utils/formatters';
 import { supabase } from '../lib/supabase';
+
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6'];
 
 export default function Admin() {
   const { data, updateData, resetData } = useBlog();
@@ -599,21 +602,21 @@ export default function Admin() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Alcance Total</div>
-                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.reduce((acc, a) => acc + a.stats.views, 0).toLocaleString()}</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{(localData.articles || []).reduce((acc, a) => acc + (a.stats?.views || 0), 0).toLocaleString()}</div>
                   <div className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><CheckCircle size={12} /> Tráfego Geral</div>
                 </div>
                 <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Rascunhos</div>
-                  <div className="text-5xl font-black text-slate-900 mb-4">{localData.articles.filter(a => a.status === 'draft').length}</div>
+                  <div className="text-5xl font-black text-slate-900 mb-4">{(localData.articles || []).filter(a => a.status === 'draft').length}</div>
                   <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> Não publicados</div>
                 </div>
                 <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-soft-xl">
                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Engajamento</div>
                   <div className="text-4xl font-black text-slate-900 mb-4 flex items-center gap-4">
-                    <span className="flex items-center gap-2 text-red-500"><Heart size={24} fill="currentColor" /> {localData.articles.reduce((acc, a) => acc + a.stats.likes, 0)}</span>
-                    <span className="flex items-center gap-2 text-slate-400"><ThumbsDown size={24} /> {localData.articles.reduce((acc, a) => acc + a.stats.dislikes, 0)}</span>
+                    <span className="flex items-center gap-2 text-red-500"><Heart size={24} fill="currentColor" /> {(localData.articles || []).reduce((acc, a) => acc + (a.stats?.likes || 0), 0)}</span>
+                    <span className="flex items-center gap-2 text-slate-400"><ThumbsDown size={24} /> {(localData.articles || []).reduce((acc, a) => acc + (a.stats?.dislikes || 0), 0)}</span>
                   </div>
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><MessageCircle size={12} /> {localData.articles.reduce((acc, a) => acc + a.stats.comments, 0)} Total de Comentários</div>
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><MessageCircle size={12} /> {(localData.articles || []).reduce((acc, a) => acc + (a.stats?.comments || 0), 0)} Total de Comentários</div>
                 </div>
               </div>
 
@@ -645,7 +648,7 @@ export default function Admin() {
                   </div>
 
                   <div className="space-y-4">
-                    {localData.articles
+                    {(localData.articles || [])
                       .filter(a => {
                         if (activeEditorialTab === 'Rascunhos') return a.status === 'draft';
                         if (activeEditorialTab === 'Publicados') return a.status === 'published';
@@ -678,7 +681,7 @@ export default function Admin() {
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-right hidden md:block">
-                             <div className="text-lg font-black text-slate-900">{article.stats.views.toLocaleString()}</div>
+                             <div className="text-lg font-black text-slate-900">{(article.stats?.views || 0).toLocaleString()}</div>
                              <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Views</div>
                           </div>
                           <div className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${article.status === 'published' ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
@@ -689,7 +692,7 @@ export default function Admin() {
                       </div>
                     ))}
                     
-                    {localData.articles.length === 0 && (
+                    {(localData.articles || []).length === 0 && (
                       <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
                          <PenTool size={48} className="mx-auto text-slate-200 mb-4" />
                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Nenhum artigo encontrado nesta pasta.</p>
@@ -921,7 +924,7 @@ export default function Admin() {
                              <div className="space-y-8">
                                 <div>
                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Insight Principal</label>
-                                   <input type="text" value={currentResearch.mainInsight} onChange={(e) => updateResearchField(currentResearch.id, 'mainInsight', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-6 text-2xl font-serif italic text-slate-900 shadow-sm focus:border-slate-900 outline-none transition-all" />
+                                   <input type="text" value={currentResearch.mainInsight} onChange={(e) => updateResearchField(currentResearch.id, 'mainInsight', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-6 text-2xl font-black text-slate-900 shadow-sm focus:border-slate-900 outline-none transition-all" />
                                 </div>
                                 <div>
                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Resumo Executivo</label>
@@ -929,7 +932,7 @@ export default function Admin() {
                                 </div>
                                 <div>
                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Corpo do Artigo</label>
-                                   <textarea rows={15} value={currentResearch.content} onChange={(e) => updateResearchField(currentResearch.id, 'content', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-8 text-lg font-serif text-slate-700 shadow-sm focus:border-slate-900 outline-none leading-relaxed" />
+                                   <textarea rows={15} value={currentResearch.content} onChange={(e) => updateResearchField(currentResearch.id, 'content', e.target.value)} className="w-full bg-white border border-slate-200 rounded-[2rem] px-8 py-8 text-lg font-medium text-slate-700 shadow-sm focus:border-slate-900 outline-none leading-relaxed" />
                                 </div>
                              </div>
                           </div>

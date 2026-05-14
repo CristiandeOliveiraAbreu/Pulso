@@ -103,13 +103,13 @@ export default function BlogResearch() {
             {opinions.slice(0, 1).map((article) => (
               <div key={article.id} className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                 <div className="lg:col-span-7">
-                  <div className="relative rounded-[3rem] overflow-hidden shadow-premium aspect-video group cursor-pointer bg-white border border-slate-100 flex items-center justify-center">
+                  <Link to={`/artigo/${article.id}`} className="block relative rounded-[3rem] overflow-hidden shadow-premium aspect-video group cursor-pointer bg-white border border-slate-100 flex items-center justify-center">
                     <img 
                       src={formatDriveUrl(article.imageUrl)} 
                       alt={article.title}
                       className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105 p-8"
                     />
-                  </div>
+                  </Link>
                 </div>
                 
                 <div className="lg:col-span-5 space-y-8">
@@ -121,11 +121,13 @@ export default function BlogResearch() {
                     </div>
                   </div>
                   
-                  <h3 className="text-5xl font-sans font-black text-black tracking-tight leading-tight hover:opacity-70 transition-opacity cursor-pointer">
-                    {article.title}
-                  </h3>
+                  <Link to={`/artigo/${article.id}`} className="block group/title">
+                    <h3 className="text-5xl font-sans font-black text-black tracking-tight leading-tight group-hover/title:opacity-70 transition-opacity cursor-pointer">
+                      {article.title}
+                    </h3>
+                  </Link>
                   
-                  <p className="text-black/50 text-lg leading-relaxed font-medium line-clamp-3 italic font-serif">
+                  <p className="text-black/50 text-lg leading-relaxed font-medium line-clamp-3">
                     {article.excerpt}
                   </p>
 
