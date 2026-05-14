@@ -154,10 +154,13 @@ export default function ArticleDetail() {
         {/* Content */}
         <div className="max-w-2xl mx-auto">
           <div 
-            className="prose prose-slate prose-xl md:prose-2xl max-w-none text-slate-800 leading-relaxed whitespace-pre-line"
-          >
-            {article.content || article.excerpt}
-          </div>
+            className="prose prose-slate prose-xl md:prose-2xl max-w-none text-slate-800 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: article.content || article.excerpt }}
+            style={{ 
+              fontSize: article.fontSize ? `${article.fontSize}px` : undefined,
+              lineHeight: article.lineHeight || undefined
+            }}
+          />
         </div>
 
         {/* Interaction Footer */}

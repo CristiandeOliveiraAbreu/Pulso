@@ -56,6 +56,8 @@ export interface ArticleItem {
     dislikes: number;
     comments: number;
   };
+  fontSize?: number;
+  lineHeight?: number;
   commentsList?: CommentItem[];
 }
 
@@ -78,6 +80,9 @@ export interface BlogData {
     logoUrl: string;
     tagline: string;
     showTagline: boolean;
+    typography: 'modern' | 'classic';
+    spacing: 'compact' | 'comfortable' | 'spacious';
+    primaryColor: string;
   };
   social: {
     facebook: string;
@@ -141,6 +146,9 @@ const DEFAULT_DATA: BlogData = {
     logoUrl: '',
     tagline: 'Sua voz, sua notícia',
     showTagline: false,
+    typography: 'modern',
+    spacing: 'comfortable',
+    primaryColor: '#0f172a',
   },
   social: {
     facebook: '#',

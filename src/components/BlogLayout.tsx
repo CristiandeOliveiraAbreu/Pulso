@@ -31,8 +31,18 @@ export function BlogLayout({ children }: BlogLayoutProps) {
     { label: 'Contato', path: '/contato' },
   ];
 
+  const typographyClass = data.branding.typography === 'classic' ? 'font-serif' : 'font-sans';
+
   return (
-    <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white">
+    <div className={`min-h-screen bg-white text-black ${typographyClass} selection:bg-black selection:text-white`}>
+      <style>{`
+        :root {
+          --primary: ${data.branding.primaryColor || '#0f172a'};
+        }
+        .text-primary { color: var(--primary); }
+        .bg-primary { background-color: var(--primary); }
+        .border-primary { border-color: var(--primary); }
+      `}</style>
       {/* Top Bar Branding */}
       <div className="pt-16 pb-8 print:hidden">
         <div className="max-w-6xl mx-auto px-6 flex flex-col items-center">

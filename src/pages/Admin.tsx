@@ -27,7 +27,16 @@ import {
   Upload,
   ThumbsDown,
   MessageCircle,
-  Heart
+  Heart,
+  Bold,
+  Italic,
+  Underline,
+  List as ListIcon,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Type
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
@@ -329,11 +338,28 @@ export default function Admin() {
                   rows={2}
                 />
 
-                <textarea 
-                  value={currentArticle.content}
-                  onChange={(e) => updateArticle(currentArticle.id, 'content', e.target.value)}
-                  placeholder="Comece a escrever o seu editorial aqui..."
-                  className="w-full text-lg font-serif text-slate-700 outline-none min-h-[500px] leading-relaxed placeholder:text-slate-200"
+                <div className="sticky top-24 z-40 flex items-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl border border-slate-100 shadow-soft-xl mb-4 w-fit mx-auto">
+                   <button onClick={() => document.execCommand('bold')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Negrito"><Bold size={16} /></button>
+                   <button onClick={() => document.execCommand('italic')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Itálico"><Italic size={16} /></button>
+                   <button onClick={() => document.execCommand('underline')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all" title="Sublinhado"><Underline size={16} /></button>
+                   <div className="w-px h-6 bg-slate-100 mx-1" />
+                   <button onClick={() => document.execCommand('justifyLeft')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignLeft size={16} /></button>
+                   <button onClick={() => document.execCommand('justifyCenter')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignCenter size={16} /></button>
+                   <button onClick={() => document.execCommand('justifyRight')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><AlignRight size={16} /></button>
+                   <div className="w-px h-6 bg-slate-100 mx-1" />
+                   <button onClick={() => document.execCommand('insertUnorderedList')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><ListIcon size={16} /></button>
+                   <button onClick={() => document.execCommand('insertOrderedList')} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all"><ListOrdered size={16} /></button>
+                </div>
+
+                <div 
+                  contentEditable
+                  onBlur={(e) => updateArticle(currentArticle.id, 'content', e.currentTarget.innerHTML)}
+                  dangerouslySetInnerHTML={{ __html: currentArticle.content }}
+                  className="w-full text-lg font-medium text-slate-700 outline-none min-h-[500px] leading-relaxed prose prose-slate max-w-none"
+                  style={{ 
+                    fontSize: `${currentArticle.fontSize || 18}px`,
+                    lineHeight: currentArticle.lineHeight || 1.6
+                  }}
                 />
               </div>
             ) : (
@@ -347,7 +373,7 @@ export default function Admin() {
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{currentArticle.date} • 5 min de leitura</div>
                     </div>
                  </div>
-                 <div className="prose prose-slate prose-xl max-w-none font-serif text-slate-700 leading-relaxed whitespace-pre-wrap">
+                 <div className="prose prose-slate prose-xl max-w-none font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
                    {currentArticle.content || 'Sem conteúdo para pré-visualizar.'}
                  </div>
               </div>
@@ -397,6 +423,36 @@ export default function Admin() {
                     onChange={(e) => updateArticle(currentArticle.id, 'category', e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-black outline-none focus:border-slate-900"
                   />
+                </div>
+
+                <div className="pt-6 space-y-6">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-2">Ajustes de Texto</label>
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Tamanho da Fonte</span>
+                        <span className="text-[9px] font-black text-slate-900">{currentArticle.fontSize || 18}px</span>
+                      </div>
+                      <input 
+                        type="range" min="14" max="32" 
+                        value={currentArticle.fontSize || 18} 
+                        onChange={(e) => updateArticle(currentArticle.id, 'fontSize', parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900" 
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Altura da Linha</span>
+                        <span className="text-[9px] font-black text-slate-900">{currentArticle.lineHeight || 1.6}</span>
+                      </div>
+                      <input 
+                        type="range" min="1" max="2.5" step="0.1" 
+                        value={currentArticle.lineHeight || 1.6} 
+                        onChange={(e) => updateArticle(currentArticle.id, 'lineHeight', parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900" 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1135,6 +1191,77 @@ export default function Admin() {
                     </label>
                   </div>
                 </div>
+              </div>
+              <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-soft-xl">
+                <h3 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight">Estilos Globais (Fontes e Espaço)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Tipografia Principal</label>
+                    <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
+                      <button 
+                        onClick={() => updateSection('branding', 'typography', 'modern')}
+                        className={`py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${localData.branding.typography === 'modern' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        Moderno (Sans)
+                      </button>
+                      <button 
+                        onClick={() => updateSection('branding', 'typography', 'classic')}
+                        className={`py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${localData.branding.typography === 'classic' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        Clássico (Serif)
+                      </button>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Define a fonte predominante de todo o portal.</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Densidade do Layout</label>
+                    <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-100 rounded-2xl">
+                      {(['compact', 'comfortable', 'spacious'] as const).map((s) => (
+                        <button 
+                          key={s}
+                          onClick={() => updateSection('branding', 'spacing', s)}
+                          className={`py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${localData.branding.spacing === s ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          {s === 'compact' ? 'Compacto' : s === 'comfortable' ? 'Médio' : 'Largo'}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Ajusta o respiro e espaçamento entre os blocos de conteúdo.</p>
+                  </div>
+                </div>
+
+                <div className="mt-12 pt-12 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-12">
+                   <div className="space-y-6">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Cor Primária da Marca</label>
+                      <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                         <input 
+                            type="color" 
+                            value={localData.branding.primaryColor} 
+                            onChange={(e) => updateSection('branding', 'primaryColor', e.target.value)}
+                            className="w-16 h-16 rounded-xl border-none cursor-pointer bg-transparent"
+                         />
+                         <div>
+                            <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{localData.branding.primaryColor}</div>
+                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Clique no quadrado para mudar a cor principal</div>
+                         </div>
+                      </div>
+                   </div>
+                   
+                   <div className="space-y-6">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Preview da Identidade</label>
+                      <div className="p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4" style={{ backgroundColor: localData.branding.primaryColor + '10' }}>
+                         <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: localData.branding.primaryColor }}>
+                            <Award size={20} />
+                         </div>
+                         <div>
+                            <div className="text-xs font-black text-slate-900 uppercase tracking-widest">Tom de Destaque</div>
+                            <div className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-1">Este tom será usado em botões e links.</div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
               </div>
             </div>
           )}
